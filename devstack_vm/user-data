@@ -1,0 +1,10 @@
+#cloud-config
+
+users:
+  - default
+  - name: devstack
+    lock-passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    ssh_authorized_keys:
+      - <rsa-key pubkey>
