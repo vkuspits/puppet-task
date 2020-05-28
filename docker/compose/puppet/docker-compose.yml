@@ -1,0 +1,83 @@
+version: '3'
+
+services:
+  puppet:
+    hostname: puppet
+    deploy:
+      restart_policy:
+        condition: any
+      replicas: 1
+    image: puppet/puppetserver
+    expose:
+      - 8140
+    volumes:
+      - /srv/volumes/local/code:/etc/puppetlabs/code/
+      - /srv/volumes/local/puppet/ssl:/etc/puppetlabs/puppet/ssl/
+      - /srv/volumes/local/puppet/serverdata:/opt/puppetlabs/server/data/puppetserver/
+    networks:
+    - puppet
+
+    # In some cases unqualified hostnames can have the .local suffix
+    # added, I've seen this under Docker of Mac Beta for instance.
+    # Due to needing to access PuppetDB on same hostame as signed in the
+    # certificate you may need to uncommant the following lines
+    #environment:
+    #  - PUPPETDB_SERVER_URLS=https://puppetdb.local:8081
+    #links:
+    #  - puppetdb:puppetdb.local
+
+  puppetdb-postgres:
+    deploy:
+      restart_policy:
+        condition: any
+      replicas: 1
+    image: puppet/puppetdb-postgres
+    environment:
+      - POSTGRES_PASSWORD=puppetdb
+      - POSTGRES_USER=puppetdb
+    expose:
+      - 5432
+    volumes:
+      - /srv/volumes/local/puppetdb-postgres/data:/var/lib/postgresql/data/
+    networks:
+    - puppet
+
+  puppetdb:
+    hostname: puppetdb
+    deploy:
+      restart_policy:
+        condition: any
+      replicas: 1
+    image: puppet/puppetdb
+    ports:
+      - 8080
+      - 8081
+    volumes:
+      - /srv/volumes/local/puppetdb/ssl:/etc/puppetlabs/puppet/ssl/
+    networks:
+    - puppet
+
+  puppetboard:
+    deploy:
+      restart_policy:
+        condition: any
+      replicas: 1
+    image: puppet/puppetboard
+    ports:
+      - 8000
+
+  puppetexplorer:
+    deploy:
+      restart_policy:
+        condition: any
+      replicas: 1
+    image: puppet/puppetexplorer
+    ports:
+      - 80
+    read_only: true
+
+networks:
+  monitoring:
+    driver_opts:
+      encrypted: 1
+    driver: overlay
